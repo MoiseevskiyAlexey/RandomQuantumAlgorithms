@@ -99,6 +99,7 @@ void QubitArray::reset()
 	std::fill(lastNoiseTime.begin(), lastNoiseTime.end(), 0);
 	std::fill(isLost.begin(), isLost.end(), false);
 	std::fill(usedInCurLayer.begin(), usedInCurLayer.end(), false);
+	std::fill(isRydberg.begin(), isRydberg.end(), false);
 	singleGateInCurLayer = false;
 	multiGateInCurLayer = false;
 	startNewLayer();
@@ -148,9 +149,20 @@ void QubitArray::cz(cords control, cords target)
 	applyNoise(target);
 	applyMultiGateErr(control, target);
 
-	controlledPhaseFlip(qubits, getIndex(control), getIndex(target));
+	bool rydbergExitationFail = (isRydberg[getIndex(control)] || isRydberg[getIndex(target)]);
 
-	if(isLost[getIndex(target)])
+	//excited to Rydberg and lost there
+	std::uniform_real_distribution rand(0.0, 1.0);
+	double failSeed = rand(gen);
+	if(czFailRate < failSeed)
+		//fail
+		isRydberg[getIndex(control)] = isRydberg[getIndex(target)] = true;
+	else
+		//success
+		if(!rydbergExitationFail)
+			controlledPhaseFlip(qubits, getIndex(control), getIndex(target));
+
+	if(isLost[getIndex(target)])	//if it was lost, drop it back (?)
 		dropQubit(getIndex(target));
 
 	multiGateInCurLayer = true;
@@ -290,8 +302,15 @@ void QubitArray::applyNoise(unsigned index)
 	if(isLost[index])
 		return;
 	std::uniform_real_distribution rand(0.0, 1.0);
-	if(loseTime > 0)
-		if(rand(gen) > std::exp((-1) * totalTime/loseTime))
+
+	double indexAtomLoseTime;
+	if(isRydberg[index])
+		indexAtomLoseTime = rydbergLoseTime;
+	else
+		indexAtomLoseTime = loseTime;
+
+	if(indexAtomLoseTime > 0)
+		if(rand(gen) > std::exp((-1) * totalTime/indexAtomLoseTime))
 		{
 			isLost[index] = true;
 			dropQubit(index);
@@ -446,4 +465,20 @@ void QubitArray::setAmpDampingRate(double val)
 		throw std::invalid_argument("Amplitude damping rate must be in range [0, 1], " +
 									std::to_string(val) + " obtained");
 	ampDampingRate = val;
+}
+
+void QubitArray::setCZFail(double val)
+{
+	if(val < 0 || val > 1)
+		throw std::invalid_argument("CZ Fail rate must be in range [0, 1], " +
+									std::to_string(val) + " obtained");
+	czFailRate = val;
+}
+
+void QubitArray::setRydbergLoseTime(double val)
+{
+	if(val < 0)
+		throw std::invalid_argument("Rydberg atom lose time must be positive, " +
+									std::to_string(val) + " obtained");
+	rydbergLoseTime = val;
 }

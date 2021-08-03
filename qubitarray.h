@@ -34,6 +34,8 @@ public:
 	void setSpamErr1to0(double val);
 	void setSpamErr(double val){ setSpamErr0to1(val); setSpamErr1to0(val); }
 	void setAmpDampingRate(double val);
+	void setCZFail(double val);
+	void setRydbergLoseTime(double val);
 
 	unsigned getXSize(){ return xSize; }
 	unsigned getYSize(){ return ySize; }
@@ -85,6 +87,8 @@ private:
 	double spamError1to0;
 	double spamError0to1;
 	double ampDampingRate;
+	double czFailRate;
+	double rydbergLoseTime;
 
 	void updateTotalTime();
 	std::random_device rd{};
@@ -105,6 +109,7 @@ private:
 	std::vector <int> lastNoiseTime;
 	std::vector <bool> usedInCurLayer;
 	std::vector <bool> isLost;
+	std::vector <bool> isRydberg;
 	void startNewLayer();
 };
 

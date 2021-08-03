@@ -2,6 +2,7 @@
 #include <QuEST.h>
 #include "randqalg.h"
 
+#include <vector>
 #include <stdlib.h>
 #include <time.h>
 #include <stdio.h>
@@ -9,28 +10,35 @@
 
 #define LINES 3
 #define COLS 4
-#define DEPTH 20
-#define AVG 50
+#define DEPTH 40
+#define AVG 200
 #define ALGS 50
 
 using namespace std;
 
 int main()
 {
-	freopen("LoseTime0.001.txt", "w", stdout);
+	//freopen("AllErrsExtreme2.txt", "w", stdout);
 	srand( (unsigned)time(NULL) );
+	QubitArray qubits;
 
-	QubitArray qubits(COLS, LINES);
-	qubits.setSingleErrRate(0.000);
-	qubits.setMultiErrRate(0.00);
-	qubits.setEnvCoupling(0.0);
-	//qubits.setAmpDampingRate(1.5);
-	qubits.setLoseTime(0.001);
+	qubits.resize(COLS - 1, LINES -1);
+	qubits.resize(COLS, LINES);
+
+	qubits.setSingleErrRate(0.001);
+	qubits.setMultiErrRate(0.01);
+	qubits.setEnvCoupling(0.001);
+	qubits.setSingleGateTime(0.1);
+	qubits.setMultiGateTime(1.0);
+	qubits.setLoseTime(10000);
+	qubits.setDynamicNoise(0.04);
+	qubits.setSpamErr0to1(0.5);
+	qubits.setSpamErr1to0(0.5);
+
 	RandQAlg alg(COLS, LINES, DEPTH);
-	alg.generate();
 
-	static constexpr int ampNum = (1 << LINES * COLS);
-	double amps[ampNum] = {0.0};
+	constexpr int ampNum = (1 << LINES * COLS);
+	std::vector<double> amps(ampNum, 0.);
 
 	cout << fixed << "{ ";
 	for(int k = 0; k < ALGS; k++)
