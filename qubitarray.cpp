@@ -140,6 +140,9 @@ void QubitArray::generateBell(cords first, cords sec)
 
 void QubitArray::cz(cords control, cords target)
 {
+	if(getIndex(control) == getIndex(target))
+		throw std::invalid_argument("In CZ instruction the control qubit cannot be equal to the target qubit");
+
 	if(usedInCurLayer[getIndex(control)] || usedInCurLayer[getIndex(target)])
 		startNewLayer();
 	usedInCurLayer[getIndex(control)] = usedInCurLayer[getIndex(target)] = true;
@@ -203,7 +206,6 @@ int QubitArray::move(cords init, cords dest)
 void QubitArray::applySingleGate(cords target, std::function<void(Qureg, unsigned)> gate)
 {
 	unsigned index = getIndex(target);
-
 	if(usedInCurLayer[index])
 		startNewLayer();
 	usedInCurLayer[index] = true;
